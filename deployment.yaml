@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/dockerconfigjson
+metadata:
+  name: gitlab-secret
+  namespace: luck
+data:
+  .dockerconfigjson: ew0KICAiYXV0aHMiOiB7DQogICAgImh0dHBzOi8vZ2l0bGFiLm5zby5tbjo1MDUwIjogew0KICAgICAgInVzZXJuYW1lIjogImx1Y2t5IiwNCiAgICAgICJwYXNzd29yZCI6ICJnN3BmYVRNQ25FajV4YkhuLXk4eCIsDQogICAgICAiZW1haWwiOiAidHNlZGVuYmFsamlyQG5zby5tbiIsDQogICAgICAiYXV0aCI6ICJiSFZqYTNrNlp6ZHdabUZVVFVOdVJXbzFlR0pJYmkxNU9IZz0iDQogICAgfQ0KICB9DQp9DQo=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: luck-deployment
+  namespace: luck
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: luck
+  template:
+    metadata:
+      labels:
+        app: luck
+    spec:
+      containers:
+        - name: luck
+          image: gitlab.nso.mn:5050/tsedenbaljir/qr:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+      imagePullSecrets:
+        - name: gitlab-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: luck-svc
+  namespace: luck
+spec:
+  selector:
+    app: luck
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: luck-ingress
+  namespace: luck
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: luck.app.nso.mn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: luck-svc
+                port:
+                  number: 80
