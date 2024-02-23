@@ -7,7 +7,7 @@ export default function QR() {
   const [groups, setGroups] = useState([]);
 
   // totalMoney
-  const limitValue = 177770000;
+  const limitValue = 1000000;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -15,14 +15,14 @@ export default function QR() {
         const res = await fetch("/api/allData");
         const dt = await res.json();
         const totalMoney = dt?.data[0]?.totalMoney || 0;
-        if (totalMoney >= limitValue && dt.dataIs.length !== 10) {
+        if (totalMoney >= limitValue && dt.dataIs.length < 10) {
+          setGroups(dt.dataIs)
           generateCodes();
         }
       } catch (error) {
 
       }
     }
-    // Poll for changes every 5 seconds
     const intervalId = setInterval(fetchData, 3000);
 
     return () => clearInterval(intervalId);
@@ -31,41 +31,43 @@ export default function QR() {
   const generateCodes = () => {
     const groupData = [];
 
+    // Мөнгөөр Сугалаа өгөх хэсэг
     fetch("/api/lot")
       .then(response => response.json())
       .then(result => {
         result.data.map(dt => {
           for (let i = 0; i < Math.min(dt.money / 25000); i++) {
-            groupData.push(dt.number); // Push only the number property
+            groupData.push(dt.number);
           }
         });
 
         removeDuplicatesAndSelectRandom(groupData)
-        setGroups(groupData);
+        // setGroups(groupData);
         setSaved(true);
       })
       .catch(error => console.log('error', error));
   };
 
+  // Сугалааг өгөгдлийн сан дээр тэмдэглэх гаргах
   function removeDuplicatesAndSelectRandom(array) {
-    const uniqueValues = Array.from(new Set(array)); // Get unique values from the array
-    const randomIndex = Math.floor(Math.random() * uniqueValues.length); // Select a random index
-    const randomValue = uniqueValues[randomIndex]; // Get the random value
+    const uniqueValues = Array.from(new Set(array));
+    const randomIndex = Math.floor(Math.random() * uniqueValues.length);
+    const randomValue = uniqueValues[randomIndex];
 
-    // Remove all occurrences of the random value from the array
     const filteredArray = array.filter(item => item === randomValue);
-    console.log(filteredArray[0]);
     var requestOptions = {
       method: 'POST',
       redirect: 'follow'
     };
 
-    fetch("http://localhost:3000/api/update?number=" + filteredArray[0], requestOptions)
+    // сугалааг сонгох
+    fetch("/api/update?number=" + filteredArray[0], requestOptions)
       .then(response => response.text())
       .then(result => console.log(result))
       .catch(error => console.log('error', error));
   }
 
+  // Хандив өгөх хэсэг
   const saveMoney = () => {
     var requestOptions = {
       method: 'POST',
@@ -93,14 +95,14 @@ export default function QR() {
       <div className="relative flex place-items-center">
         {saved ? (
           <div className="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-500" role="alert">
-            <span className="font-medium">Таньд баяр хүргье.</span> Та азтан болсон байна.
+            {/* <span className="font-medium">Таньд баяр хүргье.</span> Та азтан болсон байна. */}
             {groups.length > 0 && (
               <div>
-                <h3>Groups:</h3>
+                <h3>Азтангууд:</h3>
                 <ul>
                   {groups.map((group, index) => (
                     <li key={index}>
-                      Money: {group}
+                      Number: {index + 1}) {group.number}
                     </li>
                   ))}
                 </ul>
